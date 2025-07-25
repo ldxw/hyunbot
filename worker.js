@@ -4,7 +4,7 @@ const SECRET = ENV_BOT_SECRET
 const ADMIN_UID = ENV_ADMIN_UID
 
 const NOTIFY_INTERVAL = 3600 * 1000
-const fraudDb = 'https://raw.githubusercontent.com/LloydAsp/nfd/main/data/fraud.db'
+const fraudDb = 'https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/data/fraud.db'
 
 const enable_notification = true
 
@@ -74,8 +74,8 @@ async function onMessage(message) {
   if (message.text === '/start') {
     const lang = message.from?.language_code || 'en'
     const fileUrl = lang.startsWith('zh')
-      ? 'https://hyun.cc/Telegram/startMessage.zh.md'
-      : 'https://hyun.cc/Telegram/startMessage.en.md'
+      ? 'https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/data/startMessage.zh.md'
+      : 'https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/data/startMessage.en.md'
     const startMsg = await fetch(fileUrl).then(r => r.text())
     return sendMessage({ chat_id: message.chat.id, text: startMsg })
   }
