@@ -183,7 +183,7 @@ async function setBotCommands() {
   const adminCommands = [
     { command: "block", description: "屏蔽用户" },
     { command: "unblock", description: "解除屏蔽" },
-    { command: "checkblock", description: "查询是否屏蔽）" }
+    { command: "checkblock", description: "查询是否屏蔽" }
   ];
 
   const userCommands = [
