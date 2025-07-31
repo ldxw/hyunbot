@@ -51,7 +51,7 @@
 * 添加下列变量：
 
   * `ENV_BOT_TOKEN` ：您的 Telegram Bot Token
-  * `ENV_BOT_SECRET` ：随机字符串，用于 Webhook 验证
+  * `ENV_BOT_SECRET` ：随机字符串，用于 Webhook 验证      (打开https://www.uuidgenerator.net/ 生成)
   * `ENV_ADMIN_UID` ：您的 Telegram User ID
 
 ### 3. 绑定 KV Namespace
