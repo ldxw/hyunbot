@@ -9,6 +9,30 @@ const START_MSG_EN_URL = 'https://raw.githubusercontent.com/Tsaihyun/hyunbot/ref
 
 const ENABLE_NOTIFICATION = true;
 
+const ADMIN_REPLY_PROMPT_ZH = '🙅 请点击**转发的用户消息**进行回复，这样我才能知道您是想回复哪位用户。直接发送消息我无法识别目标用户。';
+const ADMIN_REPLY_PROMPT_EN = '🙅 Please click **reply to the forwarded user message** so I know which user you want to reply to. I cannot identify the target user if you send a message directly.';
+
+const USER_BLOCKED_PROMPT_ZH = '🚫 您已被管理员屏蔽，无法发送消息。';
+const USER_BLOCKED_PROMPT_EN = '🚫 You have been blocked by the administrator and cannot send messages.';
+
+const MESSAGE_FORWARD_FAIL_PROMPT_ZH = '抱歉，您的消息未能成功转发给管理员，请稍后再试或联系管理员。';
+const MESSAGE_FORWARD_FAIL_PROMPT_EN = 'Sorry, your message could not be forwarded to the administrator. Please try again later or contact the administrator.';
+
+const MESSAGE_FORWARDED_NOTIF_ZH = "🔔 您好，您的消息已转发给管理员，请耐心等待回复。";
+const MESSAGE_FORWARDED_NOTIF_EN = "🔔 Hello, your message has been forwarded to the administrator. Please wait patiently for a reply.";
+
+const USER_UNBLOCKED_PROMPT_ZH = '🎉 您已被管理员解除屏蔽，现在可以正常发送消息了。';
+const USER_UNBLOCKED_PROMPT_EN = '🎉 You have been unblocked by the administrator. You can now send messages normally.';
+
+const ADMIN_BLOCK_SELF_PROMPT_ZH = '⚠️ 不能屏蔽自己！';
+const ADMIN_BLOCK_SELF_PROMPT_EN = '⚠️ You cannot block yourself!';
+
+const ADMIN_CANNOT_IDENTIFY_USER_PROMPT_ZH = '❌ 无法识别要操作的用户。请确保您回复的是用户转发给您的消息。';
+const ADMIN_CANNOT_IDENTIFY_USER_PROMPT_EN = '❌ Cannot identify the user to operate on. Please make sure you are replying to a message forwarded to you by the user.';
+
+const ADMIN_CANNOT_FIND_USER_ID_PROMPT_ZH = '⚠️ 无法找到对应的用户ID。可能是旧的转发消息或非转发消息。请检查。';
+const ADMIN_CANNOT_FIND_USER_ID_PROMPT_EN = '⚠️ Cannot find the corresponding user ID. This may be an old forwarded message or a non-forwarded message. Please check.';
+
 function apiUrl(method, params = null) {
   let query = '';
   if (params) {
@@ -36,8 +60,8 @@ async function requestTelegram(method, body, params = null) {
     }
     return response.json();
   } catch (error) {
-    console.error(`执行 ${method} 方法时发生Fetch错误:`, error);
-    return { ok: false, description: `网络或未知错误: ${error.message}` };
+      console.error(`执行 ${method} 方法时发生Fetch错误:`, error);
+      return { ok: false, description: `网络或未知错误: ${error.message}` };
   }
 }
 
@@ -84,76 +108,100 @@ async function onUpdate(update) {
   }
 }
 
+function getLocalizedPrompt(langCode, prompts) {
+    if (langCode && langCode.startsWith('zh')) {
+        return prompts.zh;
+    }
+    return prompts.en;
+}
+
 async function onMessage(message) {
-  const chatId = message.chat.id;
-  const isAdmin = chatId.toString() === ADMIN_UID;
-
-  if (message.text === '/start') {
+    const chatId = message.chat.id;
+    const isAdmin = chatId.toString() === ADMIN_UID;
     const lang = message.from?.language_code || 'en';
-    const startMsgUrl = lang.startsWith('zh') ? START_MSG_ZH_URL : START_MSG_EN_URL;
-    try {
-      const startMsg = await fetch(startMsgUrl).then(r => r.text());
-      await sendMessage({ chat_id: chatId, text: startMsg, parse_mode: 'Markdown' });
-    } catch (error) {
-      console.error('获取开始消息内容失败:', error);
-      await sendMessage({ chat_id: chatId, text: '欢迎！很抱歉，未能加载完整的欢迎消息。' });
+
+    if (message.text === '/start') {
+        const startMsgUrl = lang.startsWith('zh') ? START_MSG_ZH_URL : START_MSG_EN_URL;
+        try {
+            const startMsg = await fetch(startMsgUrl).then(r => r.text());
+            await sendMessage({ chat_id: chatId, text: startMsg, parse_mode: 'Markdown' });
+        } catch (error) {
+            console.error('获取开始消息内容失败:', error);
+            const fallbackWelcome = getLocalizedPrompt(lang, {
+                zh: '欢迎！很抱歉，未能加载完整的欢迎消息。',
+                en: 'Welcome! Sorry, the full welcome message could not be loaded.'
+            });
+            await sendMessage({ chat_id: chatId, text: fallbackWelcome });
+        }
+        return;
     }
-    return;
-  }
 
-  if (isAdmin) {
-    if (message.reply_to_message) {
-      if (/^\/block$/.test(message.text)) return handleBlock(message);
-      if (/^\/unblock$/.test(message.text)) return handleUnblock(message);
-      if (/^\/checkblock$/.test(message.text)) return checkBlock(message);
+    if (isAdmin) {
+        if (message.reply_to_message) {
+            if (/^\/block$/.test(message.text)) return handleBlock(message, lang);
+            if (/^\/unblock$/.test(message.text)) return handleUnblock(message, lang);
+            if (/^\/checkblock$/.test(message.text)) return checkBlock(message, lang);
 
-      const guestId = await nfd.get('msg-map-' + message.reply_to_message.message_id, { type: "text" });
-      if (guestId) {
-        await copyMessage({
-          chat_id: guestId,
-          from_chat_id: message.chat.id,
-          message_id: message.message_id
+            const guestId = await nfd.get('msg-map-' + message.reply_to_message.message_id, { type: "text" });
+            if (guestId) {
+                await copyMessage({
+                    chat_id: guestId,
+                    from_chat_id: message.chat.id,
+                    message_id: message.message_id
+                });
+            } else {
+                const prompt = getLocalizedPrompt(lang, {
+                    zh: ADMIN_CANNOT_FIND_USER_ID_PROMPT_ZH,
+                    en: ADMIN_CANNOT_FIND_USER_ID_PROMPT_EN
+                });
+                await sendMessage({ chat_id: ADMIN_UID, text: prompt });
+            }
+        } else {
+            const prompt = getLocalizedPrompt(lang, {
+                zh: ADMIN_REPLY_PROMPT_ZH,
+                en: ADMIN_REPLY_PROMPT_EN
+            });
+            await sendMessage({ chat_id: ADMIN_UID, text: prompt });
+        }
+        return;
+    }
+
+    await handleGuestMessage(message, lang);
+}
+
+async function handleGuestMessage(message, lang) {
+    const chatId = message.chat.id;
+
+    const blocked = await nfd.get('isblocked-' + chatId, { type: "json" });
+    if (blocked) {
+        const prompt = getLocalizedPrompt(lang, {
+            zh: USER_BLOCKED_PROMPT_ZH,
+            en: USER_BLOCKED_PROMPT_EN
         });
-      } else {
-        await sendMessage({ chat_id: ADMIN_UID, text: '⚠️ 无法找到对应的用户ID。可能是旧的转发消息或非转发消息。请检查。' });
-      }
-    } else {
-      await sendMessage({
-        chat_id: ADMIN_UID,
-        text: '🙅 请点击**转发的用户消息**进行回复，这样我才能知道您是想回复哪位用户。直接发送消息我无法识别目标用户。'
-      });
+        await sendMessage({ chat_id: chatId, text: prompt });
+        return;
     }
-    return;
-  }
 
-  await handleGuestMessage(message);
+    const forwardResult = await forwardMessage({
+        chat_id: parseInt(ADMIN_UID),
+        from_chat_id: message.chat.id,
+        message_id: message.message_id
+    });
+
+    if (forwardResult.ok) {
+        await nfd.put('msg-map-' + forwardResult.result.message_id, chatId.toString());
+        await handleNotify(message, lang);
+    } else {
+        console.error('转发用户消息失败:', forwardResult);
+        const prompt = getLocalizedPrompt(lang, {
+            zh: MESSAGE_FORWARD_FAIL_PROMPT_ZH,
+            en: MESSAGE_FORWARD_FAIL_PROMPT_EN
+        });
+        await sendMessage({ chat_id: chatId, text: prompt });
+    }
 }
 
-async function handleGuestMessage(message) {
-  const chatId = message.chat.id;
-
-  const blocked = await nfd.get('isblocked-' + chatId, { type: "json" });
-  if (blocked) {
-    await sendMessage({ chat_id: chatId, text: '🚫 您已被管理员屏蔽，无法发送消息。' });
-    return;
-  }
-
-  const forwardResult = await forwardMessage({
-    chat_id: parseInt(ADMIN_UID),
-    from_chat_id: message.chat.id,
-    message_id: message.message_id
-  });
-
-  if (forwardResult.ok) {
-    await nfd.put('msg-map-' + forwardResult.result.message_id, chatId.toString());
-    await handleNotify(message);
-  } else {
-    console.error('转发用户消息失败:', forwardResult);
-    await sendMessage({ chat_id: chatId, text: '抱歉，您的消息未能成功转发给管理员，请稍后再试或联系管理员。' });
-  }
-}
-
-async function handleNotify(message) {
+async function handleNotify(message, lang) {
   const chatId = message.chat.id;
 
   if (ENABLE_NOTIFICATION) {
@@ -162,50 +210,88 @@ async function handleNotify(message) {
 
     if (Date.now() - lastTime > NOTIFY_INTERVAL) {
       await nfd.put('lastmsg-' + chatId, Date.now().toString());
-      const notificationText = "🔔 您好，您的消息已转发给管理员，请耐心等待回复。";
+      const notificationText = getLocalizedPrompt(lang, {
+          zh: MESSAGE_FORWARDED_NOTIF_ZH,
+          en: MESSAGE_FORWARDED_NOTIF_EN
+      });
       await sendMessage({ chat_id: chatId, text: notificationText });
     }
   }
 }
 
-async function handleBlock(message) {
+async function handleBlock(message, lang) {
   const guestId = await nfd.get('msg-map-' + message.reply_to_message.message_id, { type: "text" });
 
   if (!guestId) {
-    return sendMessage({ chat_id: ADMIN_UID, text: '❌ 无法识别要屏蔽的用户。请确保您回复的是用户转发给您的消息。' });
+    const prompt = getLocalizedPrompt(lang, {
+        zh: ADMIN_CANNOT_IDENTIFY_USER_PROMPT_ZH,
+        en: ADMIN_CANNOT_IDENTIFY_USER_PROMPT_EN
+    });
+    return sendMessage({ chat_id: ADMIN_UID, text: prompt });
   }
   if (guestId === ADMIN_UID) {
-    return sendMessage({ chat_id: ADMIN_UID, text: '⚠️ 不能屏蔽自己！' });
+    const prompt = getLocalizedPrompt(lang, {
+        zh: ADMIN_BLOCK_SELF_PROMPT_ZH,
+        en: ADMIN_BLOCK_SELF_PROMPT_EN
+    });
+    return sendMessage({ chat_id: ADMIN_UID, text: prompt });
   }
 
   await nfd.put('isblocked-' + guestId, true);
-  await sendMessage({ chat_id: parseInt(ADMIN_UID), text: `✅ 用户 \`${guestId}\` 已被成功屏蔽。`, parse_mode: 'Markdown' });
-  await sendMessage({ chat_id: parseInt(guestId), text: '🚫 您已被管理员屏蔽，无法继续发送消息。' });
+  await sendMessage({ chat_id: parseInt(ADMIN_UID), text: getLocalizedPrompt(lang, {
+      zh: `✅ 用户 \`${guestId}\` 已被成功屏蔽。`,
+      en: `✅ User \`${guestId}\` has been successfully blocked.`
+  }), parse_mode: 'Markdown' });
+
+  const userBlockedPrompt = getLocalizedPrompt(guestId.startsWith('zh') ? 'zh' : 'en', {
+      zh: USER_BLOCKED_PROMPT_ZH,
+      en: USER_BLOCKED_PROMPT_EN
+  });
+  await sendMessage({ chat_id: parseInt(guestId), text: userBlockedPrompt });
 }
 
-async function handleUnblock(message) {
+async function handleUnblock(message, lang) {
   const guestId = await nfd.get('msg-map-' + message.reply_to_message.message_id, { type: "text" });
 
   if (!guestId) {
-    return sendMessage({ chat_id: ADMIN_UID, text: '❌ 无法识别要解除屏蔽的用户。请确保您回复的是用户转发给您的消息。' });
+    const prompt = getLocalizedPrompt(lang, {
+        zh: ADMIN_CANNOT_IDENTIFY_USER_PROMPT_ZH,
+        en: ADMIN_CANNOT_IDENTIFY_USER_PROMPT_EN
+    });
+    return sendMessage({ chat_id: ADMIN_UID, text: prompt });
   }
 
   await nfd.put('isblocked-' + guestId, false);
-  await sendMessage({ chat_id: parseInt(ADMIN_UID), text: `✅ 用户 \`${guestId}\` 已被成功解除屏蔽。`, parse_mode: 'Markdown' });
-  await sendMessage({ chat_id: parseInt(guestId), text: '🎉 您已被管理员解除屏蔽，现在可以正常发送消息了。' });
+  await sendMessage({ chat_id: parseInt(ADMIN_UID), text: getLocalizedPrompt(lang, {
+      zh: `✅ 用户 \`${guestId}\` 已被成功解除屏蔽。`,
+      en: `✅ User \`${guestId}\` has been successfully unblocked.`
+  }), parse_mode: 'Markdown' });
+
+  const userUnblockedPrompt = getLocalizedPrompt(guestId.startsWith('zh') ? 'zh' : 'en', {
+      zh: USER_UNBLOCKED_PROMPT_ZH,
+      en: USER_UNBLOCKED_PROMPT_EN
+  });
+  await sendMessage({ chat_id: parseInt(guestId), text: userUnblockedPrompt });
 }
 
-async function checkBlock(message) {
+async function checkBlock(message, lang) {
   const guestId = await nfd.get('msg-map-' + message.reply_to_message.message_id, { type: "text" });
 
   if (!guestId) {
-    return sendMessage({ chat_id: ADMIN_UID, text: '❌ 无法识别要查询的用户。请确保您回复的是用户转发给您的消息。' });
+    const prompt = getLocalizedPrompt(lang, {
+        zh: ADMIN_CANNOT_IDENTIFY_USER_PROMPT_ZH,
+        en: ADMIN_CANNOT_IDENTIFY_USER_PROMPT_EN
+    });
+    return sendMessage({ chat_id: ADMIN_UID, text: prompt });
   }
 
   const blocked = await nfd.get('isblocked-' + guestId, { type: "json" });
   await sendMessage({
     chat_id: parseInt(ADMIN_UID),
-    text: `用户信息：\`${guestId}\` ${blocked ? '已被屏蔽 🚫' : '未被屏蔽 ✅'}`,
+    text: getLocalizedPrompt(lang, {
+        zh: `用户信息：\`${guestId}\` ${blocked ? '已被屏蔽 🚫' : '未被屏蔽 ✅'}`,
+        en: `User Info: \`${guestId}\` ${blocked ? 'is blocked 🚫' : 'is not blocked ✅'}`
+    }),
     parse_mode: 'Markdown'
   });
 }
@@ -229,7 +315,7 @@ async function setBotCommands() {
   ];
 
   const userCommands = [
-    { command: "start", description: "关于" },
+    { command: "start", description: "获取关于此机器人的信息" },
   ];
 
   const userRes = await setMyCommands(userCommands);
