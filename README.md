@@ -114,23 +114,3 @@ https://您的Worker域名/setMenu
 * 命令: `/checkblock`
 * 用法: 回复用户消息后发送命令
 
-## ⚡ Troubleshooting 疑难解答
-
-### 机器人无响应
-
-* 查看 Worker 日志 Logs
-* 确认环境变量配置正确
-* 确认 KV 命名空间已绑定
-* 确认 Webhook 注册成功
-* 尝试先扣注册 /unRegisterWebhook ，再重新注册
-
-### 无法回复用户
-
-* 确保是回复原始消息，不是单独发送
-* 检查 Worker Logs ，看是否显示找不到 userID ，可能是 KV 数据遗失或回复了过时消息
-
-### 命令无效
-
-* 确保您是管理员
-* 确保是在回复状态下发送指令
-* 重新运行 `/setMenu` 指令
