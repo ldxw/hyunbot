@@ -1,116 +1,104 @@
-# Cloudflare Worker Telegram 机器人
+# Telegram Worker Bot 部署教程
 
-这是一个基于 Cloudflare Worker 平台构建的 Telegram 机器人，旨在将普通用户的消息转发给管理员，并允许管理员直接在 Telegram 中回复这些用户。机器人还具备用户屏蔽、解除屏蔽和查询状态的功能。
+本项目将帮助你快速部署一个支持按钮菜单的 Telegram Bot，并通过 Cloudflare Worker 实现服务器less自动化服务。
 
-## ✨ 功能特性
+> 💡 **提示**：所有截图可点击放大查看。
 
-* 消息转发：用户发送给机器人的消息将自动转发给管理员。
-* 管理员回复：管理员可以直接回复转发来的用户消息，机器人会将回复内容发送给原用户。
-* 用户屏蔽/解除屏蔽：管理员可以通过命令屏蔽或解除屏蔽特定用户，被屏蔽的用户将无法向机器人发送消息。
-* 屏蔽状态查询：管理员可以查询用户的当前屏蔽状态。
-* 多语言欢迎语：支持中文和英文的 /start 欢迎消息。
-* 通知间隔：控制用户再次收到消息已转发通知的间隔时间，避免重复打扰。
+---
 
-## 🚀 部署前的准备
+## 📦 项目地址
 
-在部署机器人之前，请确保您已拥有以下资源和信息：
-
-### Cloudflare 账户
-
-一个活跃的 Cloudflare 账户
-
-### Telegram Bot Token
-
-1. 在 Telegram 中搜索并找到 @BotFather
-2. 发送 `/newbot` 命令，按照提示创建机器人
-3. 获得一个 HTTP API Token，示例： `123456:ABC-DEF1234ghIkl-zyx57W2v1u123`
-
-### Telegram 管理员 User ID
-
-1. 在 Telegram 中搜索 @userinfobot
-2. 发送任意消息，将回复您的 User ID，示例：`123456789`
-
-### Cloudflare KV Namespace
-
-1. 登录 Cloudflare 仪表盘
-2. 轨道: Workers & Pages -> KV
-3. 点击 创建 Namespace，命名（示例：my-bot-kv），点击 添加
-
-## 🛠️ 部署步骤
-
-### 1. 创建 Worker
-
-* 登录 Cloudflare 仪表盘
-* 左侧选择 Workers & Pages
-* 点击 创建应用 -> 创建 Worker
-* 命名后点击部署
-
-### 2. 配置环境变量
-
-* 进入 Worker 概览 -> 设置 -> 环境变量
-* 添加下列变量：
-
-  * `ENV_BOT_TOKEN` ：您的 Telegram Bot Token
-  * `ENV_BOT_SECRET` ：随机字符串，用于 Webhook 验证      (打开https://www.uuidgenerator.net/ 生成)
-  * `ENV_ADMIN_UID` ：您的 Telegram User ID
-
-### 3. 绑定 KV Namespace
-
-* Worker -> 设置 -> KV 命名空间绑定
-* 变量名称: `nfd` (必须为 nfd)
-* 选择之前创建的 namespace
-
-### 4. 粘贴代码
-
-* Worker -> 概览 -> 编辑代码
-* 将提供的代码复制入编辑器
-* 点击部署
-
-### 5. 注册 Webhook
-
-* 查看 Worker 域名：如 `my-telegram-bot.yourname.workers.dev`
-* 打开浏览器，访问:
+> worker 主脚本地址（右键复制链接以供部署使用）
 
 ```
-https://您的Worker域名/registerWebhook
+https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/worker.js
 ```
 
-* 如成功，将显示 `ok: true`
+---
 
-### 6. 设置按钮命令菜单 ( 非必，推荐 )
+## 🚀 快速开始
 
-* 访问:
+### 第一步：修改提示链接代码
+
+将 worker.js 中的提示链接修改为你自己的地址，推荐放到 GitHub：
+
+- 英文提示：[startMessage.en.md](https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/data/startMessage.en.md)
+- 中文提示：[startMessage.zh.md](https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/data/startMessage.zh.md)
+
+![startMessage 示例图](https://t.nsa.cc/d/BQACAgEAAxkDAAJAAAFoiy0ruk6rG-OjY96jvKzLsRodxgAC2gYAAjUrWUTPEwABbn5hMDw2BA)
+
+---
+
+### 第二步：创建 Worker 并配置环境变量
+
+路径：**Worker → 概览 → 设置 → 环境变量**
+
+添加如下变量：
+
+| 变量名            | 描述                                |
+|------------------|-------------------------------------|
+| `ENV_BOT_TOKEN`  | 你的 Telegram Bot Token              |
+| `ENV_BOT_SECRET` | 用于验证 Webhook 的随机字符串，可从 [uuidgenerator.net](https://www.uuidgenerator.net/) 获取 |
+| `ENV_ADMIN_UID`  | 你的 Telegram 用户 ID                |
+
+![环境变量配置示例](https://t.nsa.cc/d/BQACAgEAAxkDAAJAAmiLLekhbJlYfcrqolAY0yHsBvGbAALbBgACNStZRApY8mHtTQ-NNgQ)
+
+---
+
+### 第三步：绑定 KV Namespace
+
+路径：**Worker → 设置 → KV 命名空间绑定**
+
+- 变量名必须为：`nfd`  
+- 绑定你已经创建的 Namespace（KV 存储空间）
+
+![KV 绑定示例](https://t.nsa.cc/d/BQACAgEAAxkDAAJAA2iLLjOpM6QfITbW1coyiwlQ3PlRAALcBgACNStZRCFw3-c1c0vkNgQ)
+
+---
+
+### 第四步：粘贴代码并部署
+
+路径：**Worker → 概览 → 编辑代码**
+
+将提供的代码粘贴进去，点击右上角【部署】即可。
+
+![代码粘贴部署图](https://t.nsa.cc/d/BQACAgEAAxkDAAJABGiLLoaev5YspJwkuwY-_LsINSdrAALdBgACNStZRH6RnhU2AnE0NgQ)
+
+---
+
+### 第五步：注册 Webhook
+
+在浏览器中访问以下地址：
 
 ```
-https://您的Worker域名/setMenu
+https://你的Worker域名/registerWebhook
 ```
 
-* 成功后显示 JSON 响应，包括 /start /block /unblock /checkblock 等指令
+成功返回示例：
 
-## 🤖 机器人使用说明
+```json
+{ "ok": true }
+```
 
-### 普通用户
+---
 
-* 直接发送消息给机器人
-* `/start` 命令可观看欢迎语。根据 Telegram 设置会显示中文或英文
+### 第六步：设置按钮菜单（可选）
 
-### 管理员
+可选步骤，用于设置 Telegram Bot 的菜单按钮：
 
-* 您 (ENV\_ADMIN\_UID) 会收到所有用户转发消息
-* **回复用户**：请直接回复当前转发消息，不要单独发消息
+```
+https://你的Worker域名/setMenu
+```
 
-### 屏蔽用户
+![按钮命令配置图](https://t.nsa.cc/d/BQACAgEAAxkDAAJABWiLMBazAi28atolLJv6BBQsz74CAALeBgACNStZRCoKt8BJ9jNTNgQ)
 
-* 命令: `/block`
-* 用法: 回复指定用户消息，然后发送 /block
+---
 
-### 解除屏蔽
+## ✅ 部署完成！
 
-* 命令: `/unblock`
-* 用法: 回复指定用户消息，然后发送 /unblock
+现在你可以在 Telegram 上与自己的 Bot 交互了。
 
-### 查询状态
+如有疑问欢迎提交 issue 或 PR，感谢使用！
 
-* 命令: `/checkblock`
-* 用法: 回复用户消息后发送命令
+---
 
