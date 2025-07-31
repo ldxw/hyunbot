@@ -1,7 +1,7 @@
- 🤖 Welcome to Hyun’s Private Chat Assistant
+ 🤖 Welcome to Mr.Xiao Private Chat Assistant
 
 👋 Hi there!  
-I’m Hyun’s dedicated Telegram assistant. I’ll safely forward your messages to Hyun and deliver Hyun’s replies back to you.
+I’m Mr.Xiao dedicated Telegram assistant. I’ll safely forward your messages to Hyun and deliver Mr.Xiao replies back to you.
 
 ---
 
