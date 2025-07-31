@@ -1,98 +1,136 @@
-# Hyun Telegram 私聊机器人
+# Cloudflare Worker Telegram 机器人
 
-一个基于 Cloudflare Workers 的 Telegram 私聊机器人，支持消息转发给管理员、屏蔽用户、自动识别诈骗用户等功能，支持多语言欢迎语和管理员命令。
+这是一个基于 Cloudflare Worker 平台构建的 Telegram 机器人，旨在将普通用户的消息转发给管理员，并允许管理员直接在 Telegram 中回复这些用户。机器人还具备用户屏蔽、解除屏蔽和查询状态的功能。
 
----
+## ✨ 功能特性
 
+* 消息转发：用户发送给机器人的消息将自动转发给管理员。
+* 管理员回复：管理员可以直接回复转发来的用户消息，机器人会将回复内容发送给原用户。
+* 用户屏蔽/解除屏蔽：管理员可以通过命令屏蔽或解除屏蔽特定用户，被屏蔽的用户将无法向机器人发送消息。
+* 屏蔽状态查询：管理员可以查询用户的当前屏蔽状态。
+* 多语言欢迎语：支持中文和英文的 /start 欢迎消息。
+* 通知间隔：控制用户再次收到消息已转发通知的间隔时间，避免重复打扰。
 
+## 🚀 部署前的准备
 
-## 项目介绍
+在部署机器人之前，请确保您已拥有以下资源和信息：
 
-该机器人通过 Telegram Bot API 与用户私聊交互，管理员可实时收到用户消息转发，支持自动识别诈骗用户并提醒管理员，方便管理私聊咨询和防诈骗。
+### Cloudflare 账户
 
----
+一个活跃的 Cloudflare 账户
 
-## 功能特点
+### Telegram Bot Token
 
-- 用户消息自动转发给管理员
-- 管理员可以屏蔽或解除屏蔽用户
-- 诈骗用户自动检测与提醒
-- 多语言 `/start` 欢迎消息支持
-- 自定义命令菜单（菜单按钮）
-- 通过 Cloudflare Workers 部署，性能高效，免维护
+1. 在 Telegram 中搜索并找到 @BotFather
+2. 发送 `/newbot` 命令，按照提示创建机器人
+3. 获得一个 HTTP API Token，示例： `123456:ABC-DEF1234ghIkl-zyx57W2v1u123`
 
----
+### Telegram 管理员 User ID
 
-## 环境配置
+1. 在 Telegram 中搜索 @userinfobot
+2. 发送任意消息，将回复您的 User ID，示例：`123456789`
 
-你需要准备：
+### Cloudflare KV Namespace
 
-- 一个 Telegram 机器人 Token，来自 [@BotFather](https://t.me/BotFather)
-- Cloudflare Workers 账户
-- 一个管理员 Telegram 用户ID，使用 [@username_to_id_bot](https://t.me/username_to_id_bot) 获取
+1. 登录 Cloudflare 仪表盘
+2. 轨道: Workers & Pages -> KV
+3. 点击 创建 Namespace，命名（示例：my-bot-kv），点击 添加
 
-环境变量（可通过 Cloudflare Workers KV 或 Worker Secrets 配置）：
+## 🛠️ 部署步骤
 
-| 名称           | 说明                         |
-| -------------- | ---------------------------- |
-| ENV_BOT_TOKEN  | Telegram 机器人 Token        |
-| ENV_BOT_SECRET | Webhook Secret Token (自定义) |
-| ENV_ADMIN_UID  | 管理员 Telegram 用户 ID       |
+### 1. 创建 Worker
 
----
+* 登录 Cloudflare 仪表盘
+* 左侧选择 Workers & Pages
+* 点击 创建应用 -> 创建 Worker
+* 命名后点击部署
 
-## 部署步骤
+### 2. 配置环境变量
 
-1. Fork 或 Clone 本仓库到你的账户  
-2. 在 Cloudflare Workers 创建新项目  
-3. 配置上述环境变量  
-4. 部署代码到 Worker  
-5. 访问 `https://你的域名/registerWebhook` 注册 Webhook  
-6. 访问 `https://你的域名/setMenu` 设置命令菜单  
-7. 机器人启动成功，开始使用！
+* 进入 Worker 概览 -> 设置 -> 环境变量
+* 添加下列变量：
 
----
+  * `ENV_BOT_TOKEN` ：您的 Telegram Bot Token
+  * `ENV_BOT_SECRET` ：随机字符串，用于 Webhook 验证
+  * `ENV_ADMIN_UID` ：您的 Telegram User ID
 
-## 使用说明
+### 3. 绑定 KV Namespace
 
-- 用户首次私聊机器人，发送 `/start` 会收到欢迎消息（支持中英文自动切换）  
-- 用户发送消息会自动转发给管理员  
-- 管理员收到消息后可以回复，机器人会帮忙转发给用户  
+* Worker -> 设置 -> KV 命名空间绑定
+* 变量名称: `nfd` (必须为 nfd)
+* 选择之前创建的 namespace
 
----
+### 4. 粘贴代码
 
-## 管理员命令
+* Worker -> 概览 -> 编辑代码
+* 将提供的代码复制入编辑器
+* 点击部署
 
-管理员通过回复转发消息并发送以下命令操作：
+### 5. 注册 Webhook
 
-| 命令         | 说明               |
-| ------------ | ------------------ |
-| `/block`     | 屏蔽该用户         |
-| `/unblock`   | 解除屏蔽           |
-| `/checkblock`| 查询用户屏蔽状态   |
+* 查看 Worker 域名：如 `my-telegram-bot.yourname.workers.dev`
+* 打开浏览器，访问:
 
----
+```
+https://您的Worker域名/registerWebhook
+```
 
-## 常见问题
+* 如成功，将显示 `ok: true`
 
-**Q1:** 命令菜单没显示怎么办？  
-A1: 请确保已访问 `/setMenu` 路由完成菜单设置，Telegram 客户端可能需要重新启动。
+### 6. 设置按钮命令菜单 ( 非必，推荐 )
 
-**Q2:** 如何获取管理员 UID？  
-A2: 使用 [@username_to_id_bot](https://t.me/username_to_id_bot) 获取你的 Telegram 用户 ID。
+* 访问:
 
-**Q3:** 如何更换欢迎消息？  
-A3: 修改 `startMessage.zh.md` 和 `startMessage.en.md` 两个远程文件即可。
+```
+https://您的Worker域名/setMenu
+```
 
----
+* 成功后显示 JSON 响应，包括 /start /block /unblock /checkblock 等指令
 
-## 贡献指南
+## 🤖 机器人使用说明
 
-欢迎提交 Issue 和 Pull Request，帮忙改进机器人功能和体验。
+### 普通用户
 
----
+* 直接发送消息给机器人
+* `/start` 命令可观看欢迎语。根据 Telegram 设置会显示中文或英文
 
-## 许可证
+### 管理员
 
-MIT License
+* 您 (ENV\_ADMIN\_UID) 会收到所有用户转发消息
+* **回复用户**：请直接回复当前转发消息，不要单独发消息
 
+### 屏蔽用户
+
+* 命令: `/block`
+* 用法: 回复指定用户消息，然后发送 /block
+
+### 解除屏蔽
+
+* 命令: `/unblock`
+* 用法: 回复指定用户消息，然后发送 /unblock
+
+### 查询状态
+
+* 命令: `/checkblock`
+* 用法: 回复用户消息后发送命令
+
+## ⚡ Troubleshooting 疑难解答
+
+### 机器人无响应
+
+* 查看 Worker 日志 Logs
+* 确认环境变量配置正确
+* 确认 KV 命名空间已绑定
+* 确认 Webhook 注册成功
+* 尝试先扣注册 /unRegisterWebhook ，再重新注册
+
+### 无法回复用户
+
+* 确保是回复原始消息，不是单独发送
+* 检查 Worker Logs ，看是否显示找不到 userID ，可能是 KV 数据遗失或回复了过时消息
+
+### 命令无效
+
+* 确保您是管理员
+* 确保是在回复状态下发送指令
+* 重新运行 `/setMenu` 指令
