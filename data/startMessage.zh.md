@@ -1,7 +1,7 @@
- 🤖 欢迎使用 Hyun 私聊小助手
+ 🤖 欢迎使用 Mr.Xiao 私聊小助手
 
 👋 你好！  
-我是 Hyun 的 Telegram 私聊小助手，负责把你的消息安全转发给 Hyun，并将 Hyun 的回复再传递给你。
+我是 Mr.Xiao 的 Telegram 私聊小助手，负责把你的消息安全转发给 Mr.Xiao，并将 Mr.Xiao 的回复再传递给你。
 
 ---
 
