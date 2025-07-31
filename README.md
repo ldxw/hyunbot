@@ -8,7 +8,7 @@
 
 ## 📦 项目地址
 
-> worker 主脚本地址（右键复制链接以供部署使用）
+> worker 主脚本地址（访问链接复制所有内容）
 
 ```
 https://raw.githubusercontent.com/Tsaihyun/hyunbot/refs/heads/main/worker.js
